@@ -1,0 +1,29 @@
+version: '2'
+
+# Run this instance with the following:
+# docker-compose -p worldmodelers -f docker-compose.yml up -d
+
+services:
+  praise-web:
+    container_name: praise-web-server
+    image: worldmodelers.cse.sri.com/praise-web-server
+    depends_on:
+      praise-redis
+      praise-web-worker
+    external_links:
+      praise-redis:redishost
+    environment:
+      NODE_ENV=production
+
+  praise-redis:
+    container_name: praise-redis
+    image: redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  praise-web-worker:
+    container_name: praise-web-worker
+    image: worldmodelers.cse.sri.com/praise-web-worker
+    depends_on:
+      praise-redis
