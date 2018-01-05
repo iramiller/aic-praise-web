@@ -1,5 +1,4 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
@@ -20,7 +19,6 @@ const logger = new (winston.Logger)({
 });
 
 let index = require('./routes/index');
-let users = require('./routes/users');
 
 let app = express();
 
@@ -40,7 +38,6 @@ app.use(expressWinston.logger({
 
 // Add routers.
 app.use('/', index);
-app.use('/users', users);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
