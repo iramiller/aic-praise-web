@@ -3,9 +3,16 @@
 /**
  * Module dependencies.
  */
+const {spawn} = require('child_process');
 const Primus = require('primus');
+const fs = require('fs');
 const http = require('http');
+const os = require('os');
+const path = require('path');
 const app = require('../app');
+
+const JAR_PATH = 'PRAiSE-1.3.4-SNAPSHOT-jar-with-dependencies.jar';
+
 let debug = require('debug')('praiseweb:server');
 
 /**
@@ -27,7 +34,10 @@ primus.plugin('emit', require('primus-emit'));
  */
 
 server.listen(port);
-server.on('error', onError);
+server.on('error', (e) => {
+  process.stderr.write(`Unhandled exception: {e}`); // onError);
+});
+
 server.on('listening', onListening);
 
 /**
@@ -92,10 +102,54 @@ function onListening() {
   debug('Listening on ' + bind);
 }
 
+/**
+ * Runs a command for a given client
+ *
+ * @param {String} modelFile -- path and name of the temporary file to use as input
+ * @param {String} query -- the query to execute against the model
+ * @param {Primus.spark} client - connection/socket to client
+ */
+function runCommand(modelFile, query, client) {
+  let args = ['-jar', JAR_PATH, modelFile];
+  if (query && query !== '') {
+    args.push('--summations');
+    args.push('--count');
+    args.push('--query');
+    args.push(query); // '--count', '--summations'
+  } else {
+    args.push('--model');
+  }
+  console.dir(args);
+  let cmd = spawn('java', args);
+
+  cmd.stdout.on('data', (d) => {
+    client.write(`${d}`);
+  });
+  cmd.stderr.on('data', (d) => {
+    client.write(`${d}`);
+  });
+  cmd.on('error', (e) => {
+    client.write(`Process error: ${e}`);
+  });
+  cmd.on('close', (code) => {
+    process.nextTick(() => fs.unlinkSync(modelFile));
+    client.write(`// Process exited with code ${code}`);
+  });
+}
+
 primus.on('connection', function connection(spark) {
   spark.on('data', function(data) {
-    spark.write('Received Command:');
-    spark.write(data.command);
-    spark.write('Acknowledged.');
+    spark.write(`Staring...`);
+    console.dir(data);
+    if (data && data.command && data.model) {
+      let modelfile = path.join(os.tmpdir(), spark.id);
+      fs.writeFileSync(modelfile, data.model);
+
+      if (data.command === 'runsim') {
+        runCommand(modelfile, data.query, spark);
+      } else if (data.command === 'validate') {
+        runCommand(modelfile, null, spark);
+      }
+    }
   });
 });
