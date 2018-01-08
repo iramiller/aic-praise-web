@@ -1,5 +1,7 @@
-var editor = ace.edit('editor');
+var model = ace.edit('model');
+var query = ace.edit('query');
 var output = ace.edit('output');
+
 var primus = Primus.connect('/', {
   reconnect: {
     max: Infinity,
@@ -9,31 +11,22 @@ var primus = Primus.connect('/', {
 });
 
 
-editor.setTheme('ace/theme/monokai');
-editor.setShowPrintMargin(false);
-editor.getSession().setMode(ace.require('ace/mode/praise').Mode);
-editor.commands.addCommand({
-  name: 'runCode',
-  bindKey: {win: 'Ctrl-D', mac: 'Command-D'},
-  exec: function(editor) {
-    if (primus.writable) {
-      output.insert('Sending to server for evaluation.\n');
-      primus.write({'command': 'runsim', 'value': editor.getValue()});
-    } else {
-      output.insert('Can not send data to server for processing.  Are you connected?\n');
-    }
-  },
-  readOnly: true, // false if this command should not apply in readOnly mode
+model.setOptions({
+  autoScrollqueryIntoView: true,
+  highlightActiveLine: true,
+  printMargin: false,
+  theme: 'ace/theme/monokai',
 });
-editor.commands.bindKey('Shift-Enter', 'runCode');
+model.getSession().setMode(ace.require('ace/mode/praise').Mode);
 
-editor.commands.addCommand({
+model.commands.addCommand({
   name: 'validateCode',
   bindKey: {win: 'Ctrl-Alt-D', mac: 'Command-Option-D'},
-  exec: function(editor) {
+  exec: function(model) {
     if (primus.writable) {
+      output.setValue('', 0);
       output.insert('Sending to server for validation.\n');
-      primus.write({'command': 'validate', 'value': editor.getValue()});
+      primus.write({'command': 'validate', 'model': model.getValue()});
     } else {
       output.insert('Can not send data to server for processing.  Are you connected?\n');
     }
@@ -41,21 +34,55 @@ editor.commands.addCommand({
   readOnly: true, // false if this command should not apply in readOnly mode
 });
 
-editor.commands.addCommand({
-  name: 'clearOutput',
-  bindKey: {win: 'Ctrl-Alt-X', mac: 'Command-Option-X'},
-  exec: function(editor) {
+model.commands.bindKey('Shift-Enter', 'validateCode');
+
+
+query.setOptions({
+  maxLines: 1, // make it 1 line
+  autoScrollqueryIntoView: true,
+  highlightActiveLine: false,
+  printMargin: false,
+  showGutter: false,
+  theme: 'ace/theme/monokai',
+});
+// remove newlines in pasted text
+query.on('paste', function(e) {
+  e.text = e.text.replace(/[\r\n]+/g, ' ');
+});
+// make mouse position clipping nicer
+query.renderer.screenToTextCoordinates = function(x, y) {
+  var pos = this.pixelToScreenCoordinates(x, y);
+  return this.session.screenToDocumentPosition(
+      Math.min(this.session.getScreenLength() - 1, Math.max(pos.row, 0)),
+      Math.max(pos.column, 0)
+  );
+};
+
+query.commands.addCommand({
+  name: 'runCode',
+  bindKey: {win: 'Ctrl-D', mac: 'Command-D'},
+  exec: function(query) {
+    if (primus.writable) {
       output.setValue('', 0);
+      output.insert('// Sending to server for evaluation.\n');
+      primus.write({'command': 'runsim', 'model': model.getValue(), 'query': query.getValue()});
+    } else {
+      output.insert('Can not send data to server for processing.  Are you connected?\n');
+    }
   },
   readOnly: true, // false if this command should not apply in readOnly mode
 });
+query.commands.bindKey('Enter|Shift-Enter', 'runCode');
 
-output.setTheme('ace/theme/monokai');
-output.setShowPrintMargin(false);
-output.setReadOnly(true);
-output.renderer.setShowGutter(false);
-output.$blockScrolling = Infinity;
-output.getSession().setMode('ace/mode/scheme');
+
+output.setOptions({
+  autoScrollqueryIntoView: true,
+  highlightActiveLine: false,
+  printMargin: false,
+  showGutter: false,
+  theme: 'ace/theme/monokai',
+});
+output.getSession().setMode(ace.require('ace/mode/praise').Mode);
 
 primus.on('open', function open() {
   output.insert('Connected.\n');
@@ -73,7 +100,7 @@ primus.on('error', function error(err) {
 });
 
 primus.on('reconnect', function error(err) {
-  output.insert('Connection lost, reconnecting...\n');
+  output.insert('Reconnecting...\n');
 });
 
 primus.on('end', function() {
@@ -81,13 +108,13 @@ primus.on('end', function() {
 });
 
 document.getElementById('runButton').addEventListener('click', function() {
-  editor.execCommand('runCode');
+  query.execCommand('runCode');
 });
 
 document.getElementById('validateButton').addEventListener('click', function() {
-  editor.execCommand('validateCode');
+  model.execCommand('validateCode');
 });
 
 document.getElementById('clearButton').addEventListener('click', function() {
-  editor.execCommand('clearOutput');
+  output.setValue('', 0);
 });

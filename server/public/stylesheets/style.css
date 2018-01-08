@@ -7,9 +7,15 @@ a {
   color: #00B7FF;
 }
 
-#editor {
+#model {
   width:100%;
   height:400px;
+}
+
+#query {
+  width:50%;
+  font-size: 1.2em;
+  line-height:3em;
 }
 
 #output {

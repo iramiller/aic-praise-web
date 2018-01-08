@@ -4,8 +4,8 @@ block content
   h1 World Modelers PRAiSE Example
   p Demonstration system for PRAiSE.
 
-  h3 Input
-  #editor
+  h3  Model
+  #model
     | @LANG:HOGMv1
     | @MODEL:name=[Page 1]parts=[page-1]queries=[]
     | @FRAGMENT:page-1
@@ -50,14 +50,16 @@ block content
     | // P(likeChallenger) =
     | if likeChallenger = 0 then 1/(1000 + 1) else 1/(1000 + 1);
 
-  .controls
-    button(value='Clear Output' id='clearButton') Clear Output
-    button(value='Validate' id='validateButton') Validate
-    button(value='Process' id='runButton') Run
+  button(value='Validate' id='validateButton') Validate
+
+  h3 Query
+  #query
+    | likeIncumbent
 
   h3 Output
   #output
 
+  button(value='Clear Output' id='clearButton') Clear Output
 
 
   script(src='/javascripts/editor.js')
