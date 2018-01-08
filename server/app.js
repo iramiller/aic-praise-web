@@ -6,12 +6,11 @@ const bodyParser = require('body-parser');
 // Logging setup
 const winston = require('winston');
 const expressWinston = require('express-winston');
-const tsFormat = () => (new Date()).toLocaleTimeString();
 const logger = new (winston.Logger)({
   transports: [
     // colorize the output to the console
     new (winston.transports.Console)({
-      timestamp: tsFormat,
+      timestamp: () => (new Date()).toLocaleTimeString(),
       colorize: true,
       level: 'info',
     }),
@@ -41,9 +40,8 @@ app.use('/', index);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  let err = new Error('Not Found');
-  err.status = 404;
-  next(err);
+  res.statusCode = 404;
+  res.statusMessage = 'Not Found';
 });
 
 
