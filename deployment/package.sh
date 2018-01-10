@@ -8,65 +8,60 @@
 
 if [ "$1" = "" ]; then
   echo ""
-  echo "Usage: $0 VERSION {JARPATH} CONFIG"
+  echo "Usage: $0 VERSION {JARPATH}"
   echo ""
-  echo "Example: $0 v7 /absolute/path/to/praise.jar configfile.json"
+  echo "Example: $0 v7 /absolute/path/to/praise.jar"
   echo ""
-  echo "Creates and publishes server, worker images named praise-web-server:vNN and praise-web-worker:vNN"
+  echo "Creates and publishes server image named praise-web-server:vNN"
+  echo ""
   exit 1
 fi
 
-WB_VERSION=$1
-WB_PRAISE_JAR=$2
-WB_CFG_FILE=$3
+WM_VERSION=$1
+WM_PRAISE_JAR=$2
 
 BASE_STRING=worldmodelers.cse.sri.com/praise-web
 
-if [ ! -f "$WB_PRAISE_JAR" ]; then
-  echo "Can't find jar file: $WB_PRAISE_JAR"
+if [ ! -f "$WM_PRAISE_JAR" ]; then
+  echo "Can't find jar file: $WM_PRAISE_JAR"
   exit 1
 fi
-
-if [ ! -f "$WB_CFG_FILE" ]; then
-  echo "Can't find configuration file: $WB_CFG_FILE"
-  exit 1
-fi
-
 
 # CREATE THE SERVER CONTAINER IMAGE
-SERVER_IMAGE=${BASE_STRING}-server:${WB_VERSION}
-# Copy files and setup here.
+SERVER_IMAGE=${BASE_STRING}-server:${WM_VERSION}
+echo ""
+echo "=================================================================="
+echo "Building server image: $SERVER_IMAGE"
+echo "=================================================================="
+echo "Cleaning content target"
+# make sure there are not leftover artifacts first.
+rm -rf ./server/content ./server/contents.tgz;
+# create folder for content root and copy application files into it.
+mkdir -p ./server/content
+echo "Copying files into archive"
+cp -R ../server/public ../server/bin ../server/routes ../server/views ../server/*.js* ./server/content
+cp "$WM_PRAISE_JAR" ./server/content/praise.jar
+pushd ./server/content
+tar czvf ../contents.tgz .
+popd
+rm -rf ./server/content/
+
+echo "Assembling container image"
+
 # build it.
-docker built -t $SERVER_IMAGE ./server
+pushd ./server
+docker build -t "$SERVER_IMAGE" .
+popd
 echo ""
 echo "=================================================================="
 echo "Created: $SERVER_IMAGE"
 echo "=================================================================="
-
-# CREATE THE WORKER CONTAINER IMAGE
-WORKER_IMAGE=${BASE_STRING}-worker:${WB_VERSION}
-# place jar file in expected location.  Remove any previous versions of the jar.
-rm ./worker/praise.jar
-cp $WB_PRAISE_JAR ./worker/praise.jar
-# build it
-docker build -t WORKER_IMAGE ./worker
-echo ""
-echo "=================================================================="
-echo "Created: $WORKER_IMAGE"
-echo "=================================================================="
-
 
 # Publish images.  Will fail if local docker instance is not authenticated
 docker push $SERVER_IMAGE
 echo ""
 echo "=================================================================="
 echo "Published: $SERVER_IMAGE"
-echo "=================================================================="
-
-docker push $WORKER_IMAGE
-echo ""
-echo "=================================================================="
-echo "Published: $WORKER_IMAGE"
 echo "=================================================================="
 
 echo "Complete."

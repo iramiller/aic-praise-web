@@ -112,7 +112,7 @@ function runCommand(modelFile, query, client) {
   cmd.on('close', (code) => {
     process.nextTick(() => fs.unlinkSync(modelFile));
     if (code !== 0) {
-      logger.write('Process exited with fault code', code);
+      logger.error('Process exited with fault code', code);
     }
     client.write(`// Complete.`);
   });
