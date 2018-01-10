@@ -33,6 +33,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // express-winston logger makes sense BEFORE the routers.
 app.use(expressWinston.logger({
   winstonInstance: logger,
+  meta: false,
+  msg: '{{res.statusCode}} {{req.method}} {{req.url}} - {{res.responseTime}}ms',
 }));
 
 // Add routers.

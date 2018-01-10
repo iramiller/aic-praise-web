@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 /**
  * Module dependencies.
  */
@@ -11,9 +10,20 @@ const os = require('os');
 const path = require('path');
 const app = require('../app');
 
-const JAR_PATH = 'PRAiSE-1.3.4-SNAPSHOT-jar-with-dependencies.jar';
+// Logging setup
+const winston = require('winston');
+const logger = new (winston.Logger)({
+  transports: [
+    // colorize the output to the console
+    new (winston.transports.Console)({
+      timestamp: () => (new Date()).toLocaleTimeString(),
+      colorize: true,
+      level: 'info',
+    }),
+  ],
+});
 
-let debug = require('debug')('praiseweb:server');
+const JAR_PATH = (process.env.JAR_PATH || 'PRAiSE-1.3.4-SNAPSHOT-jar-with-dependencies.jar');
 
 /**
  * Get port from environment and store in Express.
@@ -24,7 +34,6 @@ app.set('port', port);
 /**
  * Create HTTP server.
  */
-
 let server = http.createServer(app);
 let primus = new Primus(server, {transformer: 'websockets'});
 primus.plugin('emit', require('primus-emit'));
@@ -32,12 +41,9 @@ primus.plugin('emit', require('primus-emit'));
 /**
  * Listen on provided port, on all network interfaces.
  */
-
 server.listen(port);
-server.on('error', (e) => {
-  process.stderr.write(`Unhandled exception: {e}`); // onError);
-});
 
+server.on('error', logger.error);
 server.on('listening', onListening);
 
 /**
@@ -63,35 +69,6 @@ function normalizePort(val) {
 }
 
 /**
- * Event listener for HTTP server "error" event.
- *
- * @param {any} error
- */
-function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  let bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
-
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
-
-/**
  * Event listener for HTTP server "listening" event.
  */
 function onListening() {
@@ -99,7 +76,7 @@ function onListening() {
   let bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+  logger.debug('Listening on ' + bind);
 }
 
 /**
@@ -115,11 +92,11 @@ function runCommand(modelFile, query, client) {
     args.push('--summations');
     args.push('--count');
     args.push('--query');
-    args.push(query); // '--count', '--summations'
+    args.push(query);
   } else {
     args.push('--model');
   }
-  console.dir(args);
+  logger.debug('Command args', args);
   let cmd = spawn('java', args);
 
   cmd.stdout.on('data', (d) => {
@@ -129,18 +106,22 @@ function runCommand(modelFile, query, client) {
     client.write(`${d}`);
   });
   cmd.on('error', (e) => {
-    client.write(`Process error: ${e}`);
+    logger.error('Error Executing Command', {command: 'java', args: args, error: e});
+    client.write('An error occured.'); // avoid leaking error information to the client
   });
   cmd.on('close', (code) => {
     process.nextTick(() => fs.unlinkSync(modelFile));
-    client.write(`// Process exited with code ${code}`);
+    if (code !== 0) {
+      logger.write('Process exited with fault code', code);
+    }
+    client.write(`// Complete.`);
   });
 }
 
 primus.on('connection', function connection(spark) {
   spark.on('data', function(data) {
-    spark.write(`Staring...`);
-    console.dir(data);
+    spark.write(`Starting...`);
+    logger.debug('Request for PRAiSE:', data);
     if (data && data.command && data.model) {
       let modelfile = path.join(os.tmpdir(), spark.id);
       fs.writeFileSync(modelfile, data.model);
