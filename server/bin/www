@@ -88,6 +88,8 @@ function onListening() {
  */
 function runCommand(modelFile, query, client) {
   let args = ['-jar', JAR_PATH, modelFile];
+  // Optional config that pauses until debugger attaches.
+  // let args = ['-Xdebug', '-Xrunjdwp:server=y,transport=dt_socket,address=8000,suspend=y', '-jar', JAR_PATH, modelFile];
   if (query && query !== '') {
     args.push('--summations');
     args.push('--count');
@@ -123,7 +125,7 @@ primus.on('connection', function connection(spark) {
     spark.write(`Starting...`);
     logger.debug('Request for PRAiSE:', data);
     if (data && data.command && data.model) {
-      let modelfile = path.join(os.tmpdir(), spark.id);
+      let modelfile = path.join(os.tmpdir(), (spark.id + '.praise'));
       fs.writeFileSync(modelfile, data.model);
 
       if (data.command === 'runsim') {
