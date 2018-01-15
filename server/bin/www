@@ -91,8 +91,8 @@ function runCommand(modelFile, query, client) {
   // Optional config that pauses until debugger attaches.
   // let args = ['-Xdebug', '-Xrunjdwp:server=y,transport=dt_socket,address=8000,suspend=y', '-jar', JAR_PATH, modelFile];
   if (query && query !== '') {
-    args.push('--summations');
-    args.push('--count');
+//    args.push('--summations');
+//    args.push('--count');
     args.push('--query');
     args.push(query);
   } else {
