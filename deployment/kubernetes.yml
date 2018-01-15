@@ -2,31 +2,19 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: worldmodelers-web-worker
-  name: worldmodelers-praise-web-worker
+    app: worldmodelers-web-server
+  name: worldmodelers-praise-web
 spec:
-  replicas: 4
+  replicas: 1
   template:
     metadata:
       labels:
-        app: worldmodelers-web-worker
+        app: worldmodelers-web-server
     spec:
       containers:
-      - name: praise-web-worker
-        image: worldmodelers.cse.sri.com/praise-web-worker
-        command: ["/entrypoint.sh"]
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8080
-          initialDelaySeconds: 15
-          timeoutSeconds: 2
-        readinessProbe:
-          httpGet:
-            path: /status
-            port: 8080
-          initialDelaySeconds: 15
-          timeoutSeconds: 2
+      - name: praise-web-ser
+        image: worldmodelers.cse.sri.com/praise-web-server:v1
+        command: ["/entrypoint.sh", "praise-server"]
         resources:
           requests:
             cpu: 1
@@ -34,66 +22,24 @@ spec:
         env:
         - name: NODE_ENV
           value: "production"
+        - name: PORT
+          value: "3000"
         ports:
         - containerPort: 8080
       imagePullSecrets:
       - name: artifactory-secret
 ---
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  labels:
-    app: worldmodelers-web
-  name: worldmodelers-redis
-spec:
-spec:
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: redis
-        role: master
-        tier: backend
-    spec:
-      containers:
-      - name: master
-        image: redis
-        command: ["redis-server", "--appendonly yes", "--dir /data"]
-        livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - redis-cli -h $(hostname) ping
-          failureThreshold: 3
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
-        resources:
-          requests:
-            cpu: "1"
-            memory: 1Gi
-        ports:
-        - containerPort: 6379
-        volumeMounts:
-        - name: redis-scratch
-          mountPath: /data
-      volumes:
-      - name: redis-scratch
-        emptyDir: {}
----
 apiVersion: v1
 kind: Service
 metadata:
   name: worldmodelers-web-service
-  namespace: world-builders
   labels:
     app: worldmodelers-web
 spec:
   selector:
     app: worldmodelers-web-server
   ports:
-    - targetPort: 8080
+    - targetPort: 3000
       port: 80
       name: command
       protocol: TCP
