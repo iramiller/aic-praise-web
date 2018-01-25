@@ -15,7 +15,7 @@ model.setOptions({
   autoScrollqueryIntoView: true,
   highlightActiveLine: true,
   printMargin: false,
-  theme: 'ace/theme/monokai',
+  theme: 'ace/theme/katzenmilch',
 });
 model.getSession().setMode(ace.require('ace/mode/praise').Mode);
 
@@ -43,7 +43,7 @@ query.setOptions({
   highlightActiveLine: false,
   printMargin: false,
   showGutter: false,
-  theme: 'ace/theme/monokai',
+  theme: 'ace/theme/katzenmilch',
 });
 // remove newlines in pasted text
 query.on('paste', function(e) {
@@ -80,7 +80,7 @@ output.setOptions({
   highlightActiveLine: false,
   printMargin: false,
   showGutter: false,
-  theme: 'ace/theme/monokai',
+  theme: 'ace/theme/katzenmilch',
 });
 output.getSession().setMode(ace.require('ace/mode/praise').Mode);
 

@@ -7,9 +7,6 @@ block content
 
   h3  Model
   #model
-    | @LANG:HOGMv1
-    | @MODEL:name=[Election Demo]parts=[demo]
-    | @FRAGMENT:demo
     | random terrorAttacks : 0..20;
     | random newJobs : 0..100; // 100K
     | random dow: 110..180;
@@ -58,7 +55,7 @@ block content
   h3 Query
   #div-query(class='input-group bm-3')
     #query
-      | likeIncumbent
+      | likeIncumbent > likeChallenger
     #query-go(class='input-group-append')
       button(class='btn btn-success btn-lg' value='Run' id='runButton') Run
 

@@ -125,7 +125,7 @@ primus.on('connection', function connection(spark) {
     spark.write(`Starting...`);
     logger.debug('Request for PRAiSE:', data);
     if (data && data.command && data.model) {
-      let modelfile = path.join(os.tmpdir(), (spark.id + '.praise'));
+      let modelfile = path.join(os.tmpdir(), (spark.id)); // + '.praise'));
       if (fs.existsSync(modelfile)) {
         // Command is currently in progress.
         spark.write('// WARNING :: Request Cancelled.  Please wait for current request to complete.');
