@@ -1,14 +1,12 @@
 extends layout
 
 block content
-  h1 World Modelers PRAiSE Example
-  p Demonstration system for PRAiSE.
+  h1 PRAiSE
+  p A simple web demonstration system for&nbsp;
+     a(href='https://github.com/aic-sri-international/aic-praise') SRI AIC PRAiSE.
 
   h3  Model
   #model
-    | @LANG:HOGMv1
-    | @MODEL:name=[Page 1]parts=[page-1]queries=[]
-    | @FRAGMENT:page-1
     | random terrorAttacks : 0..20;
     | random newJobs : 0..100; // 100K
     | random dow: 110..180;
@@ -50,7 +48,7 @@ block content
     | // P(likeChallenger) =
     | if likeChallenger = 0 then 1/(1000 + 1) else 1/(1000 + 1);
 
-  button(class='btn' value='Validate' id='validateButton') Validate
+  button(class='btn' value='Validate' id='validateButton' style='display:none') Validate
 
   p &nbsp;
 
