@@ -159,7 +159,6 @@ function lastModifiedTime(path) {
 function downloadRemoteIfNewer(remoteHost, remotePath, lastModifiedTime) {
   logger.info(`Checking ${remoteHost}${remotePath} to see if it is newer than ${lastModifiedTime}`);
   return new Promise((resolve, reject) => {
-    let unmodified = false;
     const options = {method: 'GET', timeout: 5000, host: remoteHost, path: remotePath, headers: {'If-Modified-Since': lastModifiedTime}};
     const dest = path.join(os.tmpdir(), (Date.now() + '.jar'));
     const file = fs.createWriteStream(dest, {flags: 'wx'});
@@ -169,11 +168,9 @@ function downloadRemoteIfNewer(remoteHost, remotePath, lastModifiedTime) {
         response.pipe(file);
       } else {
         file.close();
-        fs.unlink(dest, () => { }); // Delete temp file
+        fs.unlink(dest, () => { });
         if (response.statusCode === 304) {
-          unmodified = true;
           logger.info('Remote was not modified.');
-          resolve(); // nothing to do here because the remote file is not newer than the local one.
         } else {
           reject(`Server responded with ${response.statusCode}: ${response.statusMessage}`);
         }
@@ -185,9 +182,9 @@ function downloadRemoteIfNewer(remoteHost, remotePath, lastModifiedTime) {
       fs.unlink(dest, () => { });
       reject(err.message);
     });
-    // Finish and return the path to the new file.  If not modified then unlink, nothing more to do.
+    // Finish and return the path to the new file.
     file.on('finish', () => {
-      unmodified ? fs.unlink(dest) : resolve(dest);
+      resolve(dest);
     });
     // On error delete temp file and fail.
     file.on('error', (err) => {
@@ -207,8 +204,14 @@ function conditionalUpdate() {
       return downloadRemoteIfNewer(REMOTE_HOST, REMOTE_PATH, mtime);
     }).then(function(dest) {
       if (dest) {
-        logger.info('Downloaded and updated jar to use: ', dest);
-        JAR_PATH = dest;
+        fs.exists(dest, (found) => {
+          if (found) {
+            logger.info('Downloaded and updated jar to use: ', dest);
+            JAR_PATH = dest;
+          } else {
+            logger.warn('Updated jar file was not downloaded.');
+          }
+        });
       }
     }).catch((error) => {
       logger.error('Could not update local JAR with remote:', error);
